@@ -1,0 +1,11 @@
+# Local app data
+.freelance_tracker/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Virtual environments / env files
+.venv/
+venv/
+.env
