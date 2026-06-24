@@ -17,6 +17,11 @@ from config import load_config, US_STATES, get_config_version
 from db import Database
 from taxes import compute_full_tax
 from ui.styles.ttk_styles import configure_ttk_styles
+from ui.styles.design import (
+    PAGE_PAD_X, PAGE_PAD_Y, SECTION_GAP, CARD_PAD, INNER_PAD, ITEM_GAP,
+    RADIUS_BTN, PageHeader, make_panel, make_tree_holder,
+    section_label, font_caption, theme_colors,
+)
 
 if TYPE_CHECKING:
     from ui.ui_main import App
@@ -44,7 +49,7 @@ BREAKDOWN_ROWS = [
 
 class TaxPage(ctk.CTkFrame):
     def __init__(self, master, app: "App", **kw):
-        super().__init__(master, **kw)
+        super().__init__(master, fg_color="transparent", **kw)
         self.app = app
         self.db = Database()
         self.cfg = load_config()
@@ -66,58 +71,59 @@ class TaxPage(ctk.CTkFrame):
 
     # ============================================================ build
     def _build(self) -> None:
-        # ── Top bar ──
-        top = ctk.CTkFrame(self, fg_color="transparent")
-        top.pack(fill="x", padx=10, pady=(10, 4))
-        ctk.CTkLabel(top, text="Tax Estimator",
-                      font=ctk.CTkFont(size=20, weight="bold")).pack(side="left")
+        colors = theme_colors(self.cfg)
 
-        ctk.CTkLabel(top, text="Year:").pack(side="left", padx=(20, 4))
+        header = PageHeader(
+            self, "Tax Estimator", self.cfg,
+            subtitle="Annual breakdown and quarterly payment schedule",
+        )
+        header.pack(fill="x", padx=PAGE_PAD_X, pady=(PAGE_PAD_Y, SECTION_GAP))
+
+        section_label(header.trailing, "Year").pack(side="left", padx=(0, 8))
         self.year_var = ctk.StringVar(
             value=str(self.cfg["tax"].get("tax_year", date.today().year)))
         self.year_menu = ctk.CTkOptionMenu(
-            top, variable=self.year_var,
+            header.trailing, variable=self.year_var,
             values=[str(date.today().year)],
-            command=lambda _: self.refresh(), width=90)
+            command=lambda _: self.refresh(), width=90, height=32)
         self.year_menu.pack(side="left", padx=(0, 12))
+        ctk.CTkButton(
+            header.trailing, text="Recalculate", width=110, height=32,
+            corner_radius=RADIUS_BTN,
+            command=lambda: self.refresh(force=True),
+        ).pack(side="right")
 
-        ctk.CTkButton(top, text="⟳ Recalculate", width=130,
-                       command=lambda: self.refresh(force=True)).pack(side="right")
+        info_strip = make_panel(self, self.cfg)
+        info_strip.pack(fill="x", padx=PAGE_PAD_X, pady=(0, SECTION_GAP))
+        self._info_label = ctk.CTkLabel(
+            info_strip, text="", font=font_caption(),
+            text_color=colors["muted"],
+        )
+        self._info_label.pack(padx=CARD_PAD, pady=INNER_PAD)
 
-        # ── Info strip ──
-        info_strip = ctk.CTkFrame(
-            self, corner_radius=6,
-            fg_color=self.cfg["theme"].get("card_bg", "#2b2b2b"))
-        info_strip.pack(fill="x", padx=10, pady=(0, 6))
-        self._info_label = ctk.CTkLabel(info_strip, text="",
-                                          font=ctk.CTkFont(size=12))
-        self._info_label.pack(padx=10, pady=6)
-
-        # ── Main grid: [breakdown tree] | [pie chart] ──
-        main = tk.Frame(self, bd=0, highlightthickness=0)
-        main.pack(fill="both", expand=True, padx=10, pady=(0, 4))
+        main = ctk.CTkFrame(self, fg_color="transparent")
+        main.pack(fill="both", expand=True, padx=PAGE_PAD_X, pady=(0, SECTION_GAP))
         main.grid_rowconfigure(0, weight=3)
         main.grid_rowconfigure(1, weight=2)
         main.grid_columnconfigure(0, weight=3)
         main.grid_columnconfigure(1, weight=2)
 
-        # — breakdown tree (top-left) —
-        bd_holder = tk.Frame(main, bd=0, highlightthickness=0)
-        bd_holder.grid(row=0, column=0, sticky="nsew", padx=(0, 6))
+        bd_outer, bd_holder = make_tree_holder(main, self.cfg)
+        bd_outer.grid(row=0, column=0, sticky="nsew", padx=(0, 6))
         self.breakdown_tree = ttk.Treeview(
             bd_holder, columns=("label", "value"), show="headings",
             style="Tax.Treeview", selectmode="none")
         self.breakdown_tree.heading("label", text="Item",   anchor="w")
         self.breakdown_tree.heading("value", text="Amount", anchor="e")
-        self.breakdown_tree.column("label", width=300, anchor="w")
-        self.breakdown_tree.column("value", width=150, anchor="e")
+        self.breakdown_tree.column("label", width=300, anchor="w", stretch=True)
+        self.breakdown_tree.column("value", width=150, anchor="e", stretch=False)
 
-        accent = self.cfg["theme"].get("accent_color", "#3b8ed0")
+        accent = colors["accent"]
         self.breakdown_tree.tag_configure(
-            "header", background="#1a1a1a", foreground=accent,
+            "header", background=colors["surface"], foreground=accent,
             font=("Segoe UI", 11, "bold"))
         self.breakdown_tree.tag_configure(
-            "total", foreground="#dc3545",
+            "total", foreground=colors["danger"],
             font=("Segoe UI", 11, "bold"))
         self.breakdown_tree.tag_configure(
             "bold", font=("Segoe UI", 10, "bold"))
@@ -125,14 +131,14 @@ class TaxPage(ctk.CTkFrame):
             "accent", foreground=accent,
             font=("Segoe UI", 10, "bold"))
         self.breakdown_tree.tag_configure("value")
-        
-        # ── scrollbar ──
+
         sb = ttk.Scrollbar(bd_holder, orient="vertical",
-                            command=self.breakdown_tree.yview,
-                            style="Themed.Vertical.TScrollbar")
+                           command=self.breakdown_tree.yview,
+                           style="Themed.Vertical.TScrollbar")
         self.breakdown_tree.configure(yscrollcommand=sb.set)
-        sb.pack(side="right", fill="y")
-        self.breakdown_tree.pack(side="left", fill="both", expand=True)
+        sb.pack(side="right", fill="y", padx=(0, 4), pady=4)
+        self.breakdown_tree.pack(side="left", fill="both", expand=True,
+                                 padx=(4, 0), pady=4)
 
         self._bd_iids: dict[str, str] = {}
         for label, key, tag in BREAKDOWN_ROWS:
@@ -144,14 +150,14 @@ class TaxPage(ctk.CTkFrame):
                     "", "end", values=(f"   {label}", "—"), tags=(tag,))
                 self._bd_iids[key] = iid
 
-        # — chart (top-right): plain tk.Frame ——
-        self._chart_holder = tk.Frame(main, bd=0, highlightthickness=0)
-        self._chart_holder.grid(row=0, column=1, sticky="nsew", padx=(6, 0))
+        chart_panel = make_panel(main, self.cfg)
+        chart_panel.grid(row=0, column=1, sticky="nsew", padx=(6, 0))
+        self._chart_holder = tk.Frame(chart_panel, bd=0, highlightthickness=0,
+                                      bg=colors["card_bg"])
+        self._chart_holder.pack(fill="both", expand=True, padx=2, pady=2)
 
-        # — quarterly tree (bottom, spans both columns) ——
-        q_holder = tk.Frame(main, bd=0, highlightthickness=0)
-        q_holder.grid(row=1, column=0, columnspan=2, sticky="nsew",
-                       pady=(8, 0))
+        q_outer, q_holder = make_tree_holder(main, self.cfg)
+        q_outer.grid(row=1, column=0, columnspan=2, sticky="nsew", pady=(SECTION_GAP, 0))
         self.quarter_tree = ttk.Treeview(
             q_holder,
             columns=("q", "period", "due", "amount", "status"),
@@ -163,14 +169,14 @@ class TaxPage(ctk.CTkFrame):
         self.quarter_tree.heading("amount", text="Amount",        anchor="e")
         self.quarter_tree.heading("status", text="Status",        anchor="w")
         self.quarter_tree.column("q",      width=80,  anchor="w")
-        self.quarter_tree.column("period", width=180, anchor="w")
+        self.quarter_tree.column("period", width=180, anchor="w", stretch=True)
         self.quarter_tree.column("due",    width=180, anchor="w")
         self.quarter_tree.column("amount", width=140, anchor="e")
         self.quarter_tree.column("status", width=140, anchor="w")
         self.quarter_tree.tag_configure("past",     foreground="#6c757d")
         self.quarter_tree.tag_configure("due",      foreground="#ffc107")
         self.quarter_tree.tag_configure("upcoming", foreground="#28a745")
-        self.quarter_tree.pack(fill="both", expand=True)
+        self.quarter_tree.pack(fill="both", expand=True, padx=4, pady=4)
 
         self._quarter_iids: list[str] = []
         for _ in range(4):
@@ -178,14 +184,13 @@ class TaxPage(ctk.CTkFrame):
                 "", "end", values=("", "", "", "", ""))
             self._quarter_iids.append(iid)
 
-        # ── Disclaimer ──
         ctk.CTkLabel(
             self,
-            text=("⚠ Estimates only. Brackets are approximate (2024); "
+            text=("Estimates only. Brackets are approximate (2024); "
                   "consult a tax professional before filing."),
-            font=ctk.CTkFont(size=10), text_color="gray60",
+            font=font_caption(), text_color=colors["muted"],
             wraplength=900,
-        ).pack(anchor="w", padx=10, pady=(0, 8))
+        ).pack(anchor="w", padx=PAGE_PAD_X, pady=(0, PAGE_PAD_Y))
 
     # ============================================================ refresh
     def refresh(self, force: bool = False) -> None:
