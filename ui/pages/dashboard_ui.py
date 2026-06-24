@@ -12,7 +12,7 @@ from config import load_config
 from db import Database
 from dashboard import iso_range
 from ui.styles import configure_ttk_styles
-from ui.styles.layout import PAD_X, PAD_Y, GAP
+from ui.styles.layout import PAD_X, PAD_Y, GAP, GAP_SM, font_title, font_caption, muted_color, subtle_card, card_bg
 from ui.components import (
     format_value, month_name,
     PERIODS, CHARTS, CHART_KEYS, CARDS, STAT_ROWS,
@@ -34,8 +34,6 @@ def _fmt(kind: str, value, sym: str) -> str:
 class DashboardPage(ctk.CTkFrame):
     def __init__(self, master, app: "App", **kw):
         super().__init__(master, **kw)
-        self.grid_rowconfigure(0, weight=1)
-        self.grid_columnconfigure(0, weight=1)
         self.app = app
         self.db = Database()
         self.cfg = load_config()
@@ -61,26 +59,50 @@ class DashboardPage(ctk.CTkFrame):
         self._cards: DashboardCards | None = None
         self._view_switch: DashboardViewSwitch | None = None
         self._stats: DashboardStats | None = None
-        self._chart_holder = None
+        self._content_area: ctk.CTkFrame | None = None
+        self._chart_panel: ctk.CTkFrame | None = None
+        self._chart_holder: tk.Frame | None = None
+        self._chart_resize_id: str | None = None
 
         self._build()
         self.refresh()
 
     # ============================================================ build
     def _build(self) -> None:
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(5, weight=1)
+
+        ctk.CTkLabel(
+            self, text="Dashboard", font=font_title(22), anchor="w",
+        ).grid(row=0, column=0, sticky="ew", padx=PAD_X, pady=(PAD_Y, GAP))
+        ctk.CTkLabel(
+            self, text="Summary of earnings, hours, and activity",
+            font=font_caption(), text_color=muted_color(self.cfg), anchor="w",
+        ).grid(row=1, column=0, sticky="ew", padx=PAD_X, pady=(0, GAP))
+
         self._toolbar = DashboardToolbar(self)
-        self._toolbar.frame.pack(fill="x", padx=PAD_X, pady=(PAD_Y, GAP))
+        self._toolbar.frame.grid(row=2, column=0, sticky="ew", padx=PAD_X, pady=(0, GAP))
 
         self._cards = DashboardCards(self, self.cfg)
-        self._cards.frame.pack(fill="x", padx=PAD_X, pady=GAP)
+        self._cards.frame.grid(row=3, column=0, sticky="ew", padx=PAD_X, pady=(0, GAP))
 
         self._view_switch = DashboardViewSwitch(self)
-        self._view_switch.frame.pack(fill="x", padx=PAD_X, pady=(GAP, 0))
+        self._view_switch.frame.grid(
+            row=4, column=0, sticky="ew", padx=PAD_X, pady=(GAP, GAP_SM))
 
-        self._stats = DashboardStats(self, self.cfg)
-        self._stats.holder.pack(fill="both", expand=True, padx=PAD_X, pady=(GAP, PAD_Y))
+        self._content_area = ctk.CTkFrame(self, fg_color="transparent")
+        self._content_area.grid(row=5, column=0, sticky="nsew", padx=PAD_X, pady=(0, PAD_Y))
+        self._content_area.grid_rowconfigure(0, weight=1)
+        self._content_area.grid_columnconfigure(0, weight=1)
 
-        self._chart_holder = tk.Frame(self, bd=0, highlightthickness=0)
+        self._stats = DashboardStats(self._content_area, self.cfg)
+        self._stats.frame.grid(row=0, column=0, sticky="nsew")
+
+        self._chart_panel = subtle_card(self._content_area, self.cfg)
+        bg = card_bg(self.cfg)
+        self._chart_holder = tk.Frame(self._chart_panel, bd=0, highlightthickness=0, bg=bg)
+        self._chart_holder.pack(fill="both", expand=True, padx=6, pady=6)
+        self._chart_holder.bind("<Configure>", self._on_chart_configure)
 
         self._update_subperiod_menus()
 
@@ -148,22 +170,20 @@ class DashboardPage(ctk.CTkFrame):
         self._current_view = choice
         if choice == "Statistics":
             if self._chart_holder:
-                self._chart_holder.pack_forget()
+                self._chart_panel.grid_remove()
             if self._view_switch and self._view_switch.chart_menu:
                 self._view_switch.chart_menu.pack_forget()
             if self._stats:
-                self._stats.holder.pack(fill="both", expand=True,
-                                          padx=PAD_X, pady=(GAP, PAD_Y))
+                self._stats.frame.grid(row=0, column=0, sticky="nsew")
         else:
             if self._stats:
-                self._stats.holder.pack_forget()
+                self._stats.frame.grid_remove()
             if self._view_switch and self._view_switch.chart_menu:
                 self._view_switch.chart_menu.pack(side="left", padx=(16, 0))
-            if self._chart_holder:
-                self._chart_holder.pack(fill="both", expand=True,
-                                          padx=PAD_X, pady=(GAP, PAD_Y))
+            if self._chart_panel:
+                self._chart_panel.grid(row=0, column=0, sticky="nsew")
             self._ensure_canvas()
-            self._draw_chart(force=True)
+            self.after_idle(lambda: self._draw_chart(force=True))
 
     # ============================================================ helpers
     def _theme_token_now(self) -> str:
@@ -327,20 +347,45 @@ class DashboardPage(ctk.CTkFrame):
                 self._stats.tree.set(iid, "value", txt)
 
     # ============================================================ chart
+    def _on_chart_configure(self, event) -> None:
+        if self._mpl_figure is None or event.widget is not self._chart_holder:
+            return
+        w, h = event.width, event.height
+        if w < 80 or h < 80:
+            return
+        if self._chart_resize_id:
+            self.after_cancel(self._chart_resize_id)
+        self._chart_resize_id = self.after(50, lambda: self._resize_chart(w, h))
+
+    def _resize_chart(self, width: int, height: int) -> None:
+        self._chart_resize_id = None
+        if self._mpl_figure is None or self._mpl_canvas is None:
+            return
+        dpi = self._mpl_figure.get_dpi()
+        self._mpl_figure.set_size_inches(width / dpi, height / dpi, forward=True)
+        try:
+            self._mpl_canvas.draw_idle()
+        except Exception:
+            pass
+
     def _ensure_canvas(self) -> None:
         if self._mpl_canvas is not None:
             return
         is_dark = self.cfg["theme"].get("mode", "dark").lower() == "dark"
-        bg = "#1a1a1a" if is_dark else "#ffffff"
+        bg = card_bg(self.cfg) if is_dark else "#ffffff"
         if self._chart_holder:
             self._chart_holder.configure(bg=bg)
 
-        self._mpl_figure = setup_figure(bg, figsize=(8, 4), dpi=100)
+        self._mpl_figure = setup_figure(bg, figsize=(6, 3), dpi=100)
         self._mpl_axes = self._mpl_figure.add_subplot(111)
         if self._chart_holder:
             self._mpl_canvas = create_chart_canvas(self._chart_holder, self._mpl_figure)
             widget = self._mpl_canvas.get_tk_widget()
             widget.configure(bg=bg)
+            self._chart_holder.update_idletasks()
+            w = max(self._chart_holder.winfo_width(), 400)
+            h = max(self._chart_holder.winfo_height(), 200)
+            self._resize_chart(w, h)
 
     def _draw_chart(self, force: bool = False) -> None:
         if self._current_view != "Graphs":
@@ -377,7 +422,7 @@ class DashboardPage(ctk.CTkFrame):
         self._last_chart_sig = sig
 
         is_dark = self.cfg["theme"].get("mode", "dark").lower() == "dark"
-        bg = "#1a1a1a" if is_dark else "#ffffff"
+        bg = card_bg(self.cfg) if is_dark else "#ffffff"
         fg = "#dcdcdc" if is_dark else "#222222"
         accent = self.cfg["theme"].get("accent_color", "#3b8ed0")
         chart_colors = self.cfg["theme"].get(

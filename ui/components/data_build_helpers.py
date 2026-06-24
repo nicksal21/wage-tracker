@@ -11,7 +11,7 @@ import customtkinter as ctk
 
 from ui.widgets.calendar_popup import CalendarPopup
 from ui.styles.layout import (
-    PAD_X, GAP, GAP_SM, CTRL_H, BTN_H, emoji_label,
+    PAD_X, GAP, GAP_SM, CTRL_H, BTN_H,
     font_body, font_heading, font_small,
 )
 
@@ -25,17 +25,17 @@ class DataToolbar:
     def __init__(self, parent, import_cmd, export_cmd, recalc_cmd, clear_cmd, refresh_cmd):
         self.frame = ctk.CTkFrame(parent, fg_color="transparent")
         for txt, cmd, kw in (
-            (emoji_label("📥 Import", "Import"),   import_cmd,      {}),
-            (emoji_label("📤 Export", "Export"),   export_cmd,       {}),
-            (emoji_label("🔄 Recalc", "Recalc"),   recalc_cmd,  {}),
-            (emoji_label("🗑 Clear All", "Clear All"), clear_cmd,
+            ("Import",   import_cmd,      {}),
+            ("Export",   export_cmd,       {}),
+            ("Recalc",   recalc_cmd,       {}),
+            ("Clear All", clear_cmd,
              {"fg_color": "#dc3545", "hover_color": "#a71d2a"}),
         ):
             ctk.CTkButton(
                 self.frame, text=txt, width=120, height=BTN_H, command=cmd, **kw,
             ).pack(side="left", padx=(0, GAP))
         ctk.CTkButton(
-            self.frame, text=emoji_label("⟳", "Refresh"), width=42, height=CTRL_H,
+            self.frame, text="Refresh", width=42, height=CTRL_H,
             command=refresh_cmd,
         ).pack(side="right")
 
@@ -109,7 +109,7 @@ class DataForm:
             self.date_entry.insert(0, date.today().strftime("%m/%d/%y"))
 
         ctk.CTkButton(
-            date_box, text=emoji_label("📅", "Cal"), width=34, height=CTRL_H,
+            date_box, text="Cal", width=34, height=CTRL_H,
             command=open_calendar,
         ).pack(side="left", padx=(0, GAP_SM))
         ctk.CTkButton(
@@ -182,12 +182,10 @@ class DataForm:
         btn_row.grid(row=5, column=0, columnspan=6,
                        padx=px, pady=(GAP, px), sticky="w")
         self.save_btn = ctk.CTkButton(
-            btn_row, text=emoji_label("➕ Add Entry", "Add Entry"),
-            width=140, height=BTN_H)
+            btn_row, text="Add Entry", width=140, height=BTN_H)
         self.save_btn.pack(side="left", padx=(0, GAP))
         self.cancel_btn = ctk.CTkButton(
-            btn_row, text=emoji_label("✖ Cancel Edit", "Cancel Edit"),
-            width=120, height=BTN_H, fg_color="gray40")
+            btn_row, text="Cancel Edit", width=120, height=BTN_H, fg_color="gray40")
         self.cancel_btn.pack(side="left")
         self.form_status = ctk.CTkLabel(
             btn_row, text="", text_color="#28a745", font=font_small())
@@ -200,10 +198,7 @@ class DataSearchBar:
     def __init__(self, parent, search_var: ctk.StringVar, mode_var: ctk.StringVar,
                  year_var: ctk.StringVar, year_menu, on_search_change, on_refresh):
         self.frame = ctk.CTkFrame(parent, fg_color="transparent")
-        ctk.CTkLabel(
-            self.frame, text=emoji_label("🔍", "Search:"),
-            font=font_body(12),
-        ).pack(side="left", padx=(0, GAP_SM))
+        ctk.CTkLabel(self.frame, text="Search:", font=font_body(12)).pack(side="left", padx=(0, GAP_SM))
         ctk.CTkEntry(
             self.frame, textvariable=search_var, width=240, height=CTRL_H,
             placeholder_text="Search task, notes, date…",
@@ -284,13 +279,11 @@ class DataPagination:
 
         ctk.CTkButton(
             self.frame,
-            text=emoji_label("🗑 Delete Sel.", "Delete Sel."),
-            width=120, height=CTRL_H,
+            text="Delete Selected", width=130, height=CTRL_H,
             fg_color="#dc3545", hover_color="#a71d2a",
             command=delete_cmd,
         ).pack(side="right")
         ctk.CTkButton(
             self.frame,
-            text=emoji_label("✏ Edit Sel.", "Edit Sel."),
-            width=120, height=CTRL_H, command=edit_cmd,
+            text="Edit Selected", width=120, height=CTRL_H, command=edit_cmd,
         ).pack(side="right", padx=(0, GAP))

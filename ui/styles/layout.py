@@ -42,8 +42,8 @@ def supports_emoji() -> bool:
 
 
 def emoji_label(emoji_text: str, plain_text: str) -> str:
-    """Use emoji text when supported, otherwise plain text."""
-    return emoji_text if supports_emoji() else plain_text
+    """Return plain text (emoji disabled app-wide)."""
+    return plain_text
 
 
 def font_title(size: int = 18):
@@ -73,3 +73,26 @@ def font_caption(size: int = 10):
 
 def muted_color(cfg: dict) -> str:
     return "#8b949e"
+
+
+def border_color(cfg: dict) -> str:
+    return "#3d3d3d"
+
+
+def card_bg(cfg: dict) -> str:
+    return cfg.get("theme", {}).get("card_bg", "#2b2b2b")
+
+
+def subtle_card(parent, cfg: dict, **kwargs):
+    """Muted panel used to group related controls or content."""
+    import customtkinter as ctk
+
+    opts = dict(
+        corner_radius=10,
+        fg_color=card_bg(cfg),
+        border_width=1,
+        border_color=border_color(cfg),
+    )
+    opts.update(kwargs)
+    return ctk.CTkFrame(parent, **opts)
+

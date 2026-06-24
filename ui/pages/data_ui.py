@@ -13,7 +13,7 @@ from tkinter import messagebox, filedialog
 from config import load_config
 from db import Database
 from ui.styles import configure_ttk_styles
-from ui.styles.layout import PAD_X, PAD_Y, GAP, emoji_label
+from ui.styles.layout import PAD_X, PAD_Y, GAP
 from ui.widgets import CalendarPopup, ProgressDialog
 from ui.components import (
     PAGE_SIZES,
@@ -162,7 +162,7 @@ class DataPage(ctk.CTkFrame):
         self._orig_end = ""
         self._orig_total_min = 0.0
         if self._form.save_btn:
-            self._form.save_btn.configure(text=emoji_label("➕ Add Entry", "Add Entry"))
+            self._form.save_btn.configure(text="Add Entry")
         if self._form.cancel_btn:
             self._form.cancel_btn.pack_forget()
         if self._form.form_status:
@@ -195,16 +195,16 @@ class DataPage(ctk.CTkFrame):
         notes = self._form.notes_entry.get().strip() if self._form.notes_entry else ""
 
         if not task:
-            self._flash_status("⚠ Task name required.", "#ffc107"); return
+            self._flash_status("Task name required.", "#ffc107"); return
         if not date_str:
-            self._flash_status("⚠ Date required.", "#ffc107"); return
+            self._flash_status("Date required.", "#ffc107"); return
 
         if mode == "hourly":
             start = self._form.start_entry.get().strip() if self._form.start_entry else ""
             end = self._form.end_entry.get().strip() if self._form.end_entry else ""
             if not start or not end:
                 self._flash_status(
-                    "⚠ Start and end times required.", "#ffc107"); return
+                    "Start and end times required.", "#ffc107"); return
 
             if (self.editing_id is not None
                     and start == self._orig_start
@@ -227,7 +227,7 @@ class DataPage(ctk.CTkFrame):
             qty = self._safe_float(self._form.qty_entry) if self._form.qty_entry else 0.0
             if qty <= 0:
                 self._flash_status(
-                    "⚠ Task quantity must be > 0.", "#ffc107"); return
+                    "Task quantity must be greater than zero.", "#ffc107"); return
             total_min = qty
             total = self.db.calc_total(qty, rate, "per_task")
             start_val, end_val = "", ""
@@ -238,11 +238,11 @@ class DataPage(ctk.CTkFrame):
                 start_time=start_val, end_time=end_val,
                 total_minutes=total_min, rate=rate,
                 total=total, mode=mode, notes=notes)
-            self._flash_status("✓ Entry updated.", "#28a745")
+            self._flash_status("Entry updated.", "#28a745")
         else:
             self.db.add_entry(task, date_str, start_val, end_val,
                               total_min, rate, total, mode, notes)
-            self._flash_status("✓ Entry added.", "#28a745")
+            self._flash_status("Entry added.", "#28a745")
 
         self._clear_form()
         self.refresh_table(force=True)
@@ -285,8 +285,7 @@ class DataPage(ctk.CTkFrame):
             if self._form.notes_entry:
                 self._form.notes_entry.insert(0, entry.get("notes", ""))
             if self._form.save_btn:
-                self._form.save_btn.configure(
-                    text=emoji_label("💾 Update Entry", "Update Entry"))
+                self._form.save_btn.configure(text="Update Entry")
             if self._form.cancel_btn and self._form.form_status:
                 self._form.cancel_btn.pack(side="left", padx=(0, 8),
                                             before=self._form.form_status)

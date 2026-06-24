@@ -136,10 +136,10 @@ class ConfigPage(ctk.CTkScrollableFrame):
         # ── buttons ──
         btn_row = ctk.CTkFrame(self, fg_color="transparent")
         btn_row.pack(fill="x", padx=PAD_X, pady=(20, GAP))
-        ctk.CTkButton(btn_row, text="💾  Save Settings",
+        ctk.CTkButton(btn_row, text="Save Settings",
                        command=self._save, width=180).pack(side="left",
                                                             padx=(0, 10))
-        ctk.CTkButton(btn_row, text="↺  Reset Defaults",
+        ctk.CTkButton(btn_row, text="Reset Defaults",
                        command=self._reset,
                        fg_color="#dc3545", hover_color="#a71d2a",
                        width=160).pack(side="left")
@@ -239,9 +239,9 @@ class ConfigPage(ctk.CTkScrollableFrame):
         save_config(self.cfg)
         ctk.set_appearance_mode(self.cfg["theme"]["mode"])
         self.app.apply_theme(self.cfg)
-        self._flash_status("✓  Settings saved successfully.", "#28a745")
+        self._flash_status("Settings saved successfully.", "#28a745")
 
     def _reset(self) -> None:
         save_config(DEFAULT_CONFIG)
         self._flash_status(
-            "↺  Defaults restored — please restart the app.", "#ffc107")
+            "Defaults restored — please restart the app.", "#ffc107")
