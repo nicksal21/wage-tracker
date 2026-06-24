@@ -12,6 +12,9 @@ import customtkinter as ctk
 from config import load_config
 
 from ui.styles.ttk_styles import configure_ttk_styles
+from ui.styles.layout import (
+    PAD_X, GAP, NAV_H, emoji_label, font_title, font_body, font_caption, muted_color,
+)
 from ui.pages.dashboard_ui import DashboardPage
 from ui.pages.data_ui import DataPage
 from ui.pages.tax_ui import TaxPage
@@ -49,34 +52,39 @@ class App(ctk.CTk):
 
         # sidebar
         self.sidebar = ctk.CTkFrame(
-            self, width=190, corner_radius=0,
+            self, width=200, corner_radius=0,
             fg_color=self.cfg["theme"].get("sidebar_bg", "#1f1f1f"))
         self.sidebar.grid(row=0, column=0, sticky="nswe")
         self.sidebar.grid_propagate(False)
+        self.sidebar.grid_rowconfigure(1, weight=1)
 
-        # Title with emoji fallback: try emoji first, fall back to text
-        title_text = self._try_emoji("💼 Freelance\n     Tracker", "Freelance\n  Tracker")
-        ctk.CTkLabel(self.sidebar, text=title_text,
-                      font=ctk.CTkFont(size=18, weight="bold")).pack(
-            pady=(24, 28))
+        title_text = emoji_label("💼  Freelance Tracker", "Freelance Tracker")
+        ctk.CTkLabel(
+            self.sidebar, text=title_text, font=font_title(17),
+            anchor="w",
+        ).pack(fill="x", padx=PAD_X, pady=(24, 20))
+
+        nav = ctk.CTkFrame(self.sidebar, fg_color="transparent")
+        nav.pack(fill="both", expand=True, padx=GAP, pady=(0, GAP))
 
         self.nav_buttons: dict[str, ctk.CTkButton] = {}
-        for (emoji_label, emoji_icon), text_label in zip(NAV_ITEMS, NAV_LABELS):
-            # Try to use emoji; fall back to text-only label
-            display_text = self._try_emoji(f" {emoji_icon}  {text_label}", f"  {text_label}")
-            
+        for (_, emoji_icon), text_label in zip(NAV_ITEMS, NAV_LABELS):
+            display_text = emoji_label(
+                f"  {emoji_icon}  {text_label}", f"    {text_label}")
             btn = ctk.CTkButton(
-                self.sidebar, text=display_text, anchor="w",
-                height=40, corner_radius=8, fg_color="transparent",
+                nav, text=display_text, anchor="w",
+                height=NAV_H, corner_radius=8, fg_color="transparent",
+                font=font_body(13),
                 text_color=self.cfg["theme"].get("text_color", "#DCE4EE"),
                 hover_color=self.cfg["theme"].get("primary_color", "#1f6aa5"),
                 command=lambda l=text_label: self._show_page(l))
-            btn.pack(fill="x", padx=12, pady=3)
+            btn.pack(fill="x", padx=GAP, pady=3)
             self.nav_buttons[text_label] = btn
 
-        ctk.CTkLabel(self.sidebar, text="v1.3.0",
-                      font=ctk.CTkFont(size=10),
-                      text_color="gray50").pack(side="bottom", pady=10)
+        ctk.CTkLabel(
+            self.sidebar, text="v1.3.0", font=font_caption(),
+            text_color=muted_color(self.cfg),
+        ).pack(side="bottom", pady=(0, 14))
 
         # content
         self.content = ctk.CTkFrame(self, fg_color="transparent")
@@ -87,28 +95,6 @@ class App(ctk.CTk):
         self.pages: dict[str, ctk.CTkFrame] = {}
         self.current_page: str | None = None
         self._show_page("Dashboard")
-
-    # -------------------------------------------------------- emoji fallback
-    def _try_emoji(self, emoji_text: str, fallback_text: str) -> str:
-        """
-        Attempt to use emoji text; if it fails to render properly,
-        return the fallback. This helps on systems where emojis aren't
-        well-supported (e.g., some Linux setups).
-        
-        For safety, we always return the emoji_text since most modern
-        systems support Unicode emojis. If you encounter rendering issues,
-        you can add a try/except or platform check here.
-        """
-        # On most modern systems, emojis render fine. 
-        # If you're on a system without emoji support, uncomment the check below:
-        # 
-        # import platform
-        # if platform.system() == "Linux":
-        #     # Some Linux systems lack emoji fonts; use fallback
-        #     return fallback_text
-        
-        # Default: use emojis (they work on most systems including Linux with proper fonts)
-        return emoji_text
 
     # -------------------------------------------------------- nav
     def _show_page(self, name: str) -> None:

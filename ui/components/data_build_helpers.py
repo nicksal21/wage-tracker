@@ -10,6 +10,10 @@ from typing import TYPE_CHECKING, Optional, Callable
 import customtkinter as ctk
 
 from ui.widgets.calendar_popup import CalendarPopup
+from ui.styles.layout import (
+    PAD_X, GAP, GAP_SM, CTRL_H, BTN_H, emoji_label,
+    font_body, font_heading, font_small,
+)
 
 if TYPE_CHECKING:
     from ui.pages.data_ui import DataPage
@@ -21,16 +25,19 @@ class DataToolbar:
     def __init__(self, parent, import_cmd, export_cmd, recalc_cmd, clear_cmd, refresh_cmd):
         self.frame = ctk.CTkFrame(parent, fg_color="transparent")
         for txt, cmd, kw in (
-            ("📥 Import",   import_cmd,      {}),
-            ("📤 Export",   export_cmd,       {}),
-            ("🔄 Recalc",   recalc_cmd,  {}),
-            ("🗑️ Clear All", clear_cmd,
+            (emoji_label("📥 Import", "Import"),   import_cmd,      {}),
+            (emoji_label("📤 Export", "Export"),   export_cmd,       {}),
+            (emoji_label("🔄 Recalc", "Recalc"),   recalc_cmd,  {}),
+            (emoji_label("🗑 Clear All", "Clear All"), clear_cmd,
              {"fg_color": "#dc3545", "hover_color": "#a71d2a"}),
         ):
-            ctk.CTkButton(self.frame, text=txt, width=120, command=cmd, **kw).pack(
-                side="left", padx=(0, 6))
-        ctk.CTkButton(self.frame, text="⟳", width=42,
-                       command=refresh_cmd).pack(side="right")
+            ctk.CTkButton(
+                self.frame, text=txt, width=120, height=BTN_H, command=cmd, **kw,
+            ).pack(side="left", padx=(0, GAP))
+        ctk.CTkButton(
+            self.frame, text=emoji_label("⟳", "Refresh"), width=42, height=CTRL_H,
+            command=refresh_cmd,
+        ).pack(side="right")
 
 
 class DataForm:
@@ -67,111 +74,124 @@ class DataForm:
         for c in (1, 4):
             self.frame.grid_columnconfigure(c, weight=1)
 
-        ctk.CTkLabel(self.frame, text="Mode:",
-                      font=ctk.CTkFont(weight="bold")).grid(
-            row=0, column=0, padx=10, pady=(10, 4), sticky="w")
+        lbl = dict(font=font_body(12))
+        px, py = PAD_X, GAP_SM
+
+        ctk.CTkLabel(self.frame, text="Mode:", font=font_heading(12)).grid(
+            row=0, column=0, padx=px, pady=(px, py), sticky="w")
         ctk.CTkSegmentedButton(
             self.frame, values=["hourly", "per_task"], variable=self.mode_var,
-            command=self._on_mode_toggle,
-        ).grid(row=0, column=1, columnspan=5, padx=(0, 10),
-                pady=(10, 4), sticky="w")
+            command=self._on_mode_toggle, height=CTRL_H,
+        ).grid(row=0, column=1, columnspan=5, padx=(0, px),
+               pady=(px, py), sticky="w")
 
-        ctk.CTkLabel(self.frame, text="Task:").grid(
-            row=1, column=0, padx=10, pady=2, sticky="w")
+        ctk.CTkLabel(self.frame, text="Task:", **lbl).grid(
+            row=1, column=0, padx=px, pady=py, sticky="w")
         self.task_entry = ctk.CTkEntry(
-            self.frame, placeholder_text="e.g. Article writing")
+            self.frame, placeholder_text="e.g. Article writing", height=CTRL_H)
         self.task_entry.grid(row=1, column=1, columnspan=2,
-                              padx=(0, 12), pady=2, sticky="ew")
+                             padx=(0, GAP), pady=py, sticky="ew")
 
-        ctk.CTkLabel(self.frame, text="Date:").grid(
-            row=1, column=3, padx=(0, 4), pady=2, sticky="w")
+        ctk.CTkLabel(self.frame, text="Date:", **lbl).grid(
+            row=1, column=3, padx=(0, GAP_SM), pady=py, sticky="w")
         date_box = ctk.CTkFrame(self.frame, fg_color="transparent")
         date_box.grid(row=1, column=4, columnspan=2,
-                       padx=(0, 10), pady=2, sticky="w")
-        self.date_entry = ctk.CTkEntry(date_box, width=110,
-                                        placeholder_text="MM/DD/YY")
-        self.date_entry.pack(side="left", padx=(0, 4))
-        
+                       padx=(0, px), pady=py, sticky="w")
+        self.date_entry = ctk.CTkEntry(
+            date_box, width=110, height=CTRL_H, placeholder_text="MM/DD/YY")
+        self.date_entry.pack(side="left", padx=(0, GAP_SM))
+
         def open_calendar():
             CalendarPopup(self.parent, self.date_entry)
-        
+
         def fill_today():
             self.date_entry.delete(0, "end")
             self.date_entry.insert(0, date.today().strftime("%m/%d/%y"))
-        
-        ctk.CTkButton(date_box, text="📅", width=34,
-                       command=open_calendar).pack(side="left", padx=(0, 4))
-        ctk.CTkButton(date_box, text="Today", width=58,
-                       command=fill_today).pack(side="left")
+
+        ctk.CTkButton(
+            date_box, text=emoji_label("📅", "Cal"), width=34, height=CTRL_H,
+            command=open_calendar,
+        ).pack(side="left", padx=(0, GAP_SM))
+        ctk.CTkButton(
+            date_box, text="Today", width=58, height=CTRL_H,
+            command=fill_today,
+        ).pack(side="left")
 
         self.hourly_row = ctk.CTkFrame(self.frame, fg_color="transparent")
         self.hourly_row.grid(row=2, column=0, columnspan=6,
-                              sticky="ew", padx=10, pady=2)
-        ctk.CTkLabel(self.hourly_row, text="Start:", width=60).pack(side="left")
-        self.start_entry = ctk.CTkEntry(self.hourly_row, width=120,
-                                         placeholder_text="HH:MM AM/PM")
-        self.start_entry.pack(side="left", padx=(0, 4))
-        
+                              sticky="ew", padx=px, pady=py)
+        ctk.CTkLabel(self.hourly_row, text="Start:", width=60, **lbl).pack(side="left")
+        self.start_entry = ctk.CTkEntry(
+            self.hourly_row, width=120, height=CTRL_H,
+            placeholder_text="HH:MM AM/PM")
+        self.start_entry.pack(side="left", padx=(0, GAP_SM))
+
         def fill_now(entry):
             entry.delete(0, "end")
             entry.insert(0, datetime.now().strftime("%I:%M %p").lstrip("0"))
-        
-        ctk.CTkButton(self.hourly_row, text="Now", width=42,
-                       command=lambda: fill_now(self.start_entry)).pack(
-            side="left", padx=(0, 18))
-        ctk.CTkLabel(self.hourly_row, text="End:", width=50).pack(side="left")
-        self.end_entry = ctk.CTkEntry(self.hourly_row, width=120,
-                                       placeholder_text="HH:MM AM/PM")
-        self.end_entry.pack(side="left", padx=(0, 4))
-        ctk.CTkButton(self.hourly_row, text="Now", width=42,
-                       command=lambda: fill_now(self.end_entry)).pack(side="left")
+
+        ctk.CTkButton(
+            self.hourly_row, text="Now", width=42, height=CTRL_H,
+            command=lambda: fill_now(self.start_entry),
+        ).pack(side="left", padx=(0, 18))
+        ctk.CTkLabel(self.hourly_row, text="End:", width=50, **lbl).pack(side="left")
+        self.end_entry = ctk.CTkEntry(
+            self.hourly_row, width=120, height=CTRL_H,
+            placeholder_text="HH:MM AM/PM")
+        self.end_entry.pack(side="left", padx=(0, GAP_SM))
+        ctk.CTkButton(
+            self.hourly_row, text="Now", width=42, height=CTRL_H,
+            command=lambda: fill_now(self.end_entry),
+        ).pack(side="left")
 
         self.task_row = ctk.CTkFrame(self.frame, fg_color="transparent")
-        ctk.CTkLabel(self.task_row, text="# Tasks:",
-                      width=80).pack(side="left")
-        self.qty_entry = ctk.CTkEntry(self.task_row, width=100,
-                                       placeholder_text="e.g. 5")
+        ctk.CTkLabel(self.task_row, text="# Tasks:", width=80, **lbl).pack(side="left")
+        self.qty_entry = ctk.CTkEntry(
+            self.task_row, width=100, height=CTRL_H, placeholder_text="e.g. 5")
         self.qty_entry.pack(side="left")
 
-        self.rate_label = ctk.CTkLabel(self.frame, text="Rate ($/hr):")
-        self.rate_label.grid(row=3, column=0, padx=10, pady=2, sticky="w")
-        self.rate_entry = ctk.CTkEntry(self.frame, width=120,
-                                        placeholder_text="0.00")
+        self.rate_label = ctk.CTkLabel(self.frame, text="Rate ($/hr):", **lbl)
+        self.rate_label.grid(row=3, column=0, padx=px, pady=py, sticky="w")
+        self.rate_entry = ctk.CTkEntry(
+            self.frame, width=120, height=CTRL_H, placeholder_text="0.00")
         dr = self.cfg["general"].get("default_rate", 0)
         if dr:
             self.rate_entry.insert(0, str(dr))
-        self.rate_entry.grid(row=3, column=1, pady=2, sticky="w")
+        self.rate_entry.grid(row=3, column=1, pady=py, sticky="w")
 
-        ctk.CTkLabel(self.frame, text="Notes:").grid(
-            row=3, column=3, padx=(0, 4), pady=2, sticky="w")
+        ctk.CTkLabel(self.frame, text="Notes:", **lbl).grid(
+            row=3, column=3, padx=(0, GAP_SM), pady=py, sticky="w")
         self.notes_entry = ctk.CTkEntry(
-            self.frame, placeholder_text="Optional notes")
+            self.frame, placeholder_text="Optional notes", height=CTRL_H)
         self.notes_entry.grid(row=3, column=4, columnspan=2,
-                               padx=(0, 10), pady=2, sticky="ew")
+                               padx=(0, px), pady=py, sticky="ew")
 
         self.adjust_row = ctk.CTkFrame(self.frame, fg_color="transparent")
         self.adjust_row.grid(row=4, column=0, columnspan=6,
-                              sticky="ew", padx=10, pady=2)
-        ctk.CTkLabel(self.adjust_row, text="Time Adjust (min):").pack(side="left")
-        self.adjust_entry = ctk.CTkEntry(self.adjust_row, width=80,
-                                          placeholder_text="e.g. -20")
-        self.adjust_entry.pack(side="left", padx=(4, 12))
-        ctk.CTkLabel(self.adjust_row, text="Reason:").pack(side="left")
-        self.adjust_reason = ctk.CTkEntry(self.adjust_row,
-                                           placeholder_text="e.g. lunch break")
-        self.adjust_reason.pack(side="left", fill="x", expand=True, padx=(4, 0))
+                              sticky="ew", padx=px, pady=py)
+        ctk.CTkLabel(self.adjust_row, text="Time Adjust (min):", **lbl).pack(side="left")
+        self.adjust_entry = ctk.CTkEntry(
+            self.adjust_row, width=80, height=CTRL_H, placeholder_text="e.g. -20")
+        self.adjust_entry.pack(side="left", padx=(GAP_SM, GAP))
+        ctk.CTkLabel(self.adjust_row, text="Reason:", **lbl).pack(side="left")
+        self.adjust_reason = ctk.CTkEntry(
+            self.adjust_row, height=CTRL_H, placeholder_text="e.g. lunch break")
+        self.adjust_reason.pack(side="left", fill="x", expand=True, padx=(GAP_SM, 0))
 
         btn_row = ctk.CTkFrame(self.frame, fg_color="transparent")
         btn_row.grid(row=5, column=0, columnspan=6,
-                       padx=10, pady=(4, 10), sticky="w")
-        self.save_btn = ctk.CTkButton(btn_row, text="➕ Add Entry", width=140)
-        self.save_btn.pack(side="left", padx=(0, 8))
+                       padx=px, pady=(GAP, px), sticky="w")
+        self.save_btn = ctk.CTkButton(
+            btn_row, text=emoji_label("➕ Add Entry", "Add Entry"),
+            width=140, height=BTN_H)
+        self.save_btn.pack(side="left", padx=(0, GAP))
         self.cancel_btn = ctk.CTkButton(
-            btn_row, text="✖ Cancel Edit", width=120,
-            fg_color="gray40")
-        self.form_status = ctk.CTkLabel(btn_row, text="",
-                                         text_color="#28a745")
-        self.form_status.pack(side="left", padx=(12, 0))
+            btn_row, text=emoji_label("✖ Cancel Edit", "Cancel Edit"),
+            width=120, height=BTN_H, fg_color="gray40")
+        self.cancel_btn.pack(side="left")
+        self.form_status = ctk.CTkLabel(
+            btn_row, text="", text_color="#28a745", font=font_small())
+        self.form_status.pack(side="left", padx=(GAP, 0))
 
 
 class DataSearchBar:
@@ -180,18 +200,26 @@ class DataSearchBar:
     def __init__(self, parent, search_var: ctk.StringVar, mode_var: ctk.StringVar,
                  year_var: ctk.StringVar, year_menu, on_search_change, on_refresh):
         self.frame = ctk.CTkFrame(parent, fg_color="transparent")
-        ctk.CTkLabel(self.frame, text="🔍").pack(side="left", padx=(0, 4))
-        ctk.CTkEntry(self.frame, textvariable=search_var, width=240,
-                      placeholder_text="Search task, notes, date…").pack(
-            side="left", padx=(0, 12))
+        ctk.CTkLabel(
+            self.frame, text=emoji_label("🔍", "Search:"),
+            font=font_body(12),
+        ).pack(side="left", padx=(0, GAP_SM))
+        ctk.CTkEntry(
+            self.frame, textvariable=search_var, width=240, height=CTRL_H,
+            placeholder_text="Search task, notes, date…",
+        ).pack(side="left", padx=(0, GAP))
 
-        ctk.CTkLabel(self.frame, text="Mode:").pack(side="left", padx=(0, 4))
-        ctk.CTkOptionMenu(self.frame, variable=mode_var,
-                           values=["All", "Hourly", "Per Task"],
-                           command=lambda _: on_refresh(),
-                           width=110).pack(side="left", padx=(0, 12))
+        ctk.CTkLabel(self.frame, text="Mode:", font=font_body(12)).pack(
+            side="left", padx=(0, GAP_SM))
+        ctk.CTkOptionMenu(
+            self.frame, variable=mode_var,
+            values=["All", "Hourly", "Per Task"],
+            command=lambda _: on_refresh(), width=110, height=CTRL_H,
+        ).pack(side="left", padx=(0, GAP))
 
-        ctk.CTkLabel(self.frame, text="Year:").pack(side="left", padx=(0, 4))
+        ctk.CTkLabel(self.frame, text="Year:", font=font_body(12)).pack(
+            side="left", padx=(0, GAP_SM))
+        year_menu.configure(height=CTRL_H)
         year_menu.pack(side="left")
 
 
@@ -219,7 +247,8 @@ class DataTable:
         }
         for col, (heading, width) in headings.items():
             self.tree.heading(col, text=heading)
-            self.tree.column(col, width=width, minwidth=40)
+            stretch = col in ("task", "notes")
+            self.tree.column(col, width=width, minwidth=40, stretch=stretch)
         scroll = ttk.Scrollbar(self.holder, orient="vertical",
                                 command=self.tree.yview,
                                 style="Themed.Vertical.TScrollbar")
@@ -237,20 +266,31 @@ class DataPagination:
         from ui.components.dashboard_specs import PAGE_SIZES
         
         self.frame = ctk.CTkFrame(parent, fg_color="transparent")
-        ctk.CTkButton(self.frame, text="◀", width=42,
-                       command=prev_cmd).pack(side="left", padx=(0, 4))
-        self.pag_label = ctk.CTkLabel(self.frame, text="—")
-        self.pag_label.pack(side="left", padx=8)
-        ctk.CTkButton(self.frame, text="▶", width=42,
-                       command=next_cmd).pack(side="left")
-        ctk.CTkLabel(self.frame, text="Page:").pack(side="left", padx=(20, 4))
-        ctk.CTkOptionMenu(self.frame, variable=page_size_var,
-                           values=PAGE_SIZES,
-                           command=on_page_size_change,
-                           width=80).pack(side="left")
+        ctk.CTkButton(
+            self.frame, text="◀", width=42, height=CTRL_H, command=prev_cmd,
+        ).pack(side="left", padx=(0, GAP_SM))
+        self.pag_label = ctk.CTkLabel(self.frame, text="—", font=font_small())
+        self.pag_label.pack(side="left", padx=GAP)
+        ctk.CTkButton(
+            self.frame, text="▶", width=42, height=CTRL_H, command=next_cmd,
+        ).pack(side="left")
+        ctk.CTkLabel(self.frame, text="Page:", font=font_body(12)).pack(
+            side="left", padx=(20, GAP_SM))
+        ctk.CTkOptionMenu(
+            self.frame, variable=page_size_var,
+            values=PAGE_SIZES, command=on_page_size_change,
+            width=80, height=CTRL_H,
+        ).pack(side="left")
 
-        ctk.CTkButton(self.frame, text="🗑️ Delete Sel.", width=120,
-                       fg_color="#dc3545", hover_color="#a71d2a",
-                       command=delete_cmd).pack(side="right")
-        ctk.CTkButton(self.frame, text="✏️ Edit Sel.", width=120,
-                       command=edit_cmd).pack(side="right", padx=(0, 6))
+        ctk.CTkButton(
+            self.frame,
+            text=emoji_label("🗑 Delete Sel.", "Delete Sel."),
+            width=120, height=CTRL_H,
+            fg_color="#dc3545", hover_color="#a71d2a",
+            command=delete_cmd,
+        ).pack(side="right")
+        ctk.CTkButton(
+            self.frame,
+            text=emoji_label("✏ Edit Sel.", "Edit Sel."),
+            width=120, height=CTRL_H, command=edit_cmd,
+        ).pack(side="right", padx=(0, GAP))

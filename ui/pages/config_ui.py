@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 from config import (
     load_config, save_config, US_STATES, FILING_STATUSES, DEFAULT_CONFIG,
 )
+from ui.styles.layout import PAD_X, PAD_Y, GAP, GAP_SM, font_heading, font_caption, muted_color
 
 if TYPE_CHECKING:
     from ui.ui_main import App
@@ -30,7 +31,7 @@ class ConfigPage(ctk.CTkScrollableFrame):
         self._section("Theme Settings")
 
         row = ctk.CTkFrame(self, fg_color="transparent")
-        row.pack(fill="x", padx=10, pady=4)
+        row.pack(fill="x", padx=PAD_X, pady=GAP)
         ctk.CTkLabel(row, text="Appearance Mode:").pack(side="left", padx=(0, 10))
         self.mode_var = ctk.StringVar(value=self.cfg["theme"]["mode"].capitalize())
         ctk.CTkOptionMenu(
@@ -49,7 +50,7 @@ class ConfigPage(ctk.CTkScrollableFrame):
         self._section("Tax / Filing Settings")
 
         row2 = ctk.CTkFrame(self, fg_color="transparent")
-        row2.pack(fill="x", padx=10, pady=4)
+        row2.pack(fill="x", padx=PAD_X, pady=GAP)
         ctk.CTkLabel(row2, text="Filing Status:").pack(side="left", padx=(0, 10))
         self.filing_var = ctk.StringVar(
             value=FILING_STATUSES.get(self.cfg["tax"]["filing_status"], "Single")
@@ -60,7 +61,7 @@ class ConfigPage(ctk.CTkScrollableFrame):
         ).pack(side="left")
 
         row3 = ctk.CTkFrame(self, fg_color="transparent")
-        row3.pack(fill="x", padx=10, pady=4)
+        row3.pack(fill="x", padx=PAD_X, pady=GAP)
         ctk.CTkLabel(row3, text="State:").pack(side="left", padx=(0, 10))
         state_labels = [f"{c} – {n}" for c, n in US_STATES.items()]
         cur_state = self.cfg["tax"]["state"]
@@ -72,7 +73,7 @@ class ConfigPage(ctk.CTkScrollableFrame):
         ).pack(side="left")
 
         row_year = ctk.CTkFrame(self, fg_color="transparent")
-        row_year.pack(fill="x", padx=10, pady=4)
+        row_year.pack(fill="x", padx=PAD_X, pady=GAP)
         ctk.CTkLabel(row_year, text="Tax Year:").pack(side="left", padx=(0, 10))
         self.year_entry = ctk.CTkEntry(row_year, width=80)
         self.year_entry.insert(0, str(self.cfg["tax"].get("tax_year", 2024)))
@@ -85,7 +86,7 @@ class ConfigPage(ctk.CTkScrollableFrame):
         ctk.CTkCheckBox(
             self, text="Use Standard Deduction", variable=self.std_var,
             command=self._toggle_custom,
-        ).pack(anchor="w", padx=10, pady=4)
+        ).pack(anchor="w", padx=PAD_X, pady=GAP)
 
         self.custom_ded_entry = self._ded_row(
             "Custom Deduction ($):", ded.get("custom_deduction", 0))
@@ -105,7 +106,7 @@ class ConfigPage(ctk.CTkScrollableFrame):
         self._section("General")
 
         row_rate = ctk.CTkFrame(self, fg_color="transparent")
-        row_rate.pack(fill="x", padx=10, pady=4)
+        row_rate.pack(fill="x", padx=PAD_X, pady=GAP)
         ctk.CTkLabel(row_rate, text="Default Rate ($):").pack(
             side="left", padx=(0, 10))
         self.default_rate_entry = ctk.CTkEntry(row_rate, width=100)
@@ -114,7 +115,7 @@ class ConfigPage(ctk.CTkScrollableFrame):
         self.default_rate_entry.pack(side="left")
 
         row_mode = ctk.CTkFrame(self, fg_color="transparent")
-        row_mode.pack(fill="x", padx=10, pady=4)
+        row_mode.pack(fill="x", padx=PAD_X, pady=GAP)
         ctk.CTkLabel(row_mode, text="Default Entry Mode:").pack(
             side="left", padx=(0, 10))
         self.default_mode_var = ctk.StringVar(
@@ -125,7 +126,7 @@ class ConfigPage(ctk.CTkScrollableFrame):
         ).pack(side="left")
 
         row_ps = ctk.CTkFrame(self, fg_color="transparent")
-        row_ps.pack(fill="x", padx=10, pady=4)
+        row_ps.pack(fill="x", padx=PAD_X, pady=GAP)
         ctk.CTkLabel(row_ps, text="Table Page Size:").pack(side="left", padx=(0, 10))
         self.page_size_entry = ctk.CTkEntry(row_ps, width=80)
         self.page_size_entry.insert(
@@ -134,7 +135,7 @@ class ConfigPage(ctk.CTkScrollableFrame):
 
         # ── buttons ──
         btn_row = ctk.CTkFrame(self, fg_color="transparent")
-        btn_row.pack(fill="x", padx=10, pady=20)
+        btn_row.pack(fill="x", padx=PAD_X, pady=(20, GAP))
         ctk.CTkButton(btn_row, text="💾  Save Settings",
                        command=self._save, width=180).pack(side="left",
                                                             padx=(0, 10))
@@ -143,20 +144,20 @@ class ConfigPage(ctk.CTkScrollableFrame):
                        fg_color="#dc3545", hover_color="#a71d2a",
                        width=160).pack(side="left")
 
-        self.status_label = ctk.CTkLabel(self, text="", text_color="#28a745")
-        self.status_label.pack(pady=(0, 10))
+        self.status_label = ctk.CTkLabel(
+            self, text="", text_color="#28a745", font=font_caption())
+        self.status_label.pack(pady=(0, PAD_Y))
 
     # ============================================================ helpers
     def _section(self, title: str) -> None:
-        ctk.CTkLabel(self, text=title,
-                      font=ctk.CTkFont(size=16, weight="bold")).pack(
-            anchor="w", padx=10, pady=(18, 4))
-        ctk.CTkFrame(self, height=2, fg_color="gray40").pack(
-            fill="x", padx=10, pady=(0, 6))
+        ctk.CTkLabel(self, text=title, font=font_heading(16)).pack(
+            anchor="w", padx=PAD_X, pady=(18, GAP))
+        ctk.CTkFrame(self, height=1, fg_color="gray40").pack(
+            fill="x", padx=PAD_X, pady=(0, GAP))
 
     def _color_row(self, label: str, key: str) -> None:
         row = ctk.CTkFrame(self, fg_color="transparent")
-        row.pack(fill="x", padx=10, pady=3)
+        row.pack(fill="x", padx=PAD_X, pady=GAP_SM)
         ctk.CTkLabel(row, text=f"{label}:").pack(side="left", padx=(0, 10))
         color = self.cfg["theme"].get(key, "#3b8ed0")
         swatch = ctk.CTkButton(

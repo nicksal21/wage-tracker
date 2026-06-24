@@ -17,6 +17,10 @@ from config import load_config, US_STATES, get_config_version
 from db import Database
 from taxes import compute_full_tax
 from ui.styles.ttk_styles import configure_ttk_styles
+from ui.styles.layout import (
+    PAD_X, PAD_Y, GAP, GAP_SM, CTRL_H, emoji_label,
+    font_title, font_body, font_caption, muted_color,
+)
 
 if TYPE_CHECKING:
     from ui.ui_main import App
@@ -45,6 +49,8 @@ BREAKDOWN_ROWS = [
 class TaxPage(ctk.CTkFrame):
     def __init__(self, master, app: "App", **kw):
         super().__init__(master, **kw)
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
         self.app = app
         self.db = Database()
         self.cfg = load_config()
@@ -68,34 +74,37 @@ class TaxPage(ctk.CTkFrame):
     def _build(self) -> None:
         # ── Top bar ──
         top = ctk.CTkFrame(self, fg_color="transparent")
-        top.pack(fill="x", padx=10, pady=(10, 4))
-        ctk.CTkLabel(top, text="Tax Estimator",
-                      font=ctk.CTkFont(size=20, weight="bold")).pack(side="left")
+        top.pack(fill="x", padx=PAD_X, pady=(PAD_Y, GAP))
+        ctk.CTkLabel(top, text="Tax Estimator", font=font_title(20)).pack(side="left")
 
-        ctk.CTkLabel(top, text="Year:").pack(side="left", padx=(20, 4))
+        ctk.CTkLabel(top, text="Year:", font=font_body(12)).pack(
+            side="left", padx=(20, GAP_SM))
         self.year_var = ctk.StringVar(
             value=str(self.cfg["tax"].get("tax_year", date.today().year)))
         self.year_menu = ctk.CTkOptionMenu(
             top, variable=self.year_var,
             values=[str(date.today().year)],
-            command=lambda _: self.refresh(), width=90)
-        self.year_menu.pack(side="left", padx=(0, 12))
+            command=lambda _: self.refresh(), width=90, height=CTRL_H)
+        self.year_menu.pack(side="left", padx=(0, GAP))
 
-        ctk.CTkButton(top, text="⟳ Recalculate", width=130,
-                       command=lambda: self.refresh(force=True)).pack(side="right")
+        ctk.CTkButton(
+            top, text=emoji_label("⟳ Recalculate", "Recalculate"),
+            width=130, height=CTRL_H,
+            command=lambda: self.refresh(force=True),
+        ).pack(side="right")
 
-        # ── Info strip ──
         info_strip = ctk.CTkFrame(
             self, corner_radius=6,
             fg_color=self.cfg["theme"].get("card_bg", "#2b2b2b"))
-        info_strip.pack(fill="x", padx=10, pady=(0, 6))
-        self._info_label = ctk.CTkLabel(info_strip, text="",
-                                          font=ctk.CTkFont(size=12))
-        self._info_label.pack(padx=10, pady=6)
+        info_strip.pack(fill="x", padx=PAD_X, pady=(0, GAP))
+        self._info_label = ctk.CTkLabel(
+            info_strip, text="", font=font_caption(),
+            text_color=muted_color(self.cfg),
+        )
+        self._info_label.pack(padx=PAD_X, pady=GAP)
 
-        # ── Main grid: [breakdown tree] | [pie chart] ──
         main = tk.Frame(self, bd=0, highlightthickness=0)
-        main.pack(fill="both", expand=True, padx=10, pady=(0, 4))
+        main.pack(fill="both", expand=True, padx=PAD_X, pady=(0, GAP))
         main.grid_rowconfigure(0, weight=3)
         main.grid_rowconfigure(1, weight=2)
         main.grid_columnconfigure(0, weight=3)
@@ -109,8 +118,8 @@ class TaxPage(ctk.CTkFrame):
             style="Tax.Treeview", selectmode="none")
         self.breakdown_tree.heading("label", text="Item",   anchor="w")
         self.breakdown_tree.heading("value", text="Amount", anchor="e")
-        self.breakdown_tree.column("label", width=300, anchor="w")
-        self.breakdown_tree.column("value", width=150, anchor="e")
+        self.breakdown_tree.column("label", width=300, anchor="w", stretch=True)
+        self.breakdown_tree.column("value", width=150, anchor="e", stretch=False)
 
         accent = self.cfg["theme"].get("accent_color", "#3b8ed0")
         self.breakdown_tree.tag_configure(
@@ -163,7 +172,7 @@ class TaxPage(ctk.CTkFrame):
         self.quarter_tree.heading("amount", text="Amount",        anchor="e")
         self.quarter_tree.heading("status", text="Status",        anchor="w")
         self.quarter_tree.column("q",      width=80,  anchor="w")
-        self.quarter_tree.column("period", width=180, anchor="w")
+        self.quarter_tree.column("period", width=180, anchor="w", stretch=True)
         self.quarter_tree.column("due",    width=180, anchor="w")
         self.quarter_tree.column("amount", width=140, anchor="e")
         self.quarter_tree.column("status", width=140, anchor="w")
@@ -183,9 +192,9 @@ class TaxPage(ctk.CTkFrame):
             self,
             text=("⚠ Estimates only. Brackets are approximate (2024); "
                   "consult a tax professional before filing."),
-            font=ctk.CTkFont(size=10), text_color="gray60",
+            font=font_caption(), text_color=muted_color(self.cfg),
             wraplength=900,
-        ).pack(anchor="w", padx=10, pady=(0, 8))
+        ).pack(anchor="w", padx=PAD_X, pady=(0, PAD_Y))
 
     # ============================================================ refresh
     def refresh(self, force: bool = False) -> None:

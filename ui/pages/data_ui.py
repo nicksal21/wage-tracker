@@ -13,6 +13,7 @@ from tkinter import messagebox, filedialog
 from config import load_config
 from db import Database
 from ui.styles import configure_ttk_styles
+from ui.styles.layout import PAD_X, PAD_Y, GAP, emoji_label
 from ui.widgets import CalendarPopup, ProgressDialog
 from ui.components import (
     PAGE_SIZES,
@@ -32,6 +33,8 @@ if TYPE_CHECKING:
 class DataPage(ctk.CTkFrame):
     def __init__(self, master, app: "App", **kw):
         super().__init__(master, **kw)
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
         self.app = app
         self.db = Database()
         self.cfg = load_config()
@@ -79,31 +82,31 @@ class DataPage(ctk.CTkFrame):
         self._toolbar = DataToolbar(self, self._import_file, self._export_csv, 
                                     self._recalculate_all, self._clear_all,
                                     lambda: self.refresh_table(force=True))
-        self._toolbar.frame.pack(fill="x", padx=10, pady=(10, 4))
-        
+        self._toolbar.frame.pack(fill="x", padx=PAD_X, pady=(PAD_Y, GAP))
+
         self._form = DataForm(self, self.cfg, self.mode_var, self._on_mode_toggle)
-        self._form.frame.pack(fill="x", padx=10, pady=6)
+        self._form.frame.pack(fill="x", padx=PAD_X, pady=GAP)
         if self._form.save_btn:
             self._form.save_btn.configure(command=self._save_entry)
         if self._form.cancel_btn:
             self._form.cancel_btn.configure(command=self._cancel_edit)
-        
+
         self.tbl_year_menu = ctk.CTkOptionMenu(
             self, variable=self.tbl_year_var, values=["All"],
-            command=lambda _: self.refresh_table(), width=90)
+            command=lambda _: self.refresh_table(), width=90, height=32)
 
         self._search_bar = DataSearchBar(self, self.tbl_search_var, self.tbl_mode_var,
                                          self.tbl_year_var, self.tbl_year_menu,
                                          self._on_search_change, self.refresh_table)
-        self._search_bar.frame.pack(fill="x", padx=10, pady=(4, 2))
+        self._search_bar.frame.pack(fill="x", padx=PAD_X, pady=GAP)
 
         self._table = DataTable(self, self._on_tree_click)
-        self._table.holder.pack(fill="both", expand=True, padx=10, pady=(0, 4))
+        self._table.holder.pack(fill="both", expand=True, padx=PAD_X, pady=(0, GAP))
 
         self._pagination = DataPagination(self, self._prev_page, self._next_page,
                                           self.page_size_var, self._on_page_size_change,
                                           self._delete_selected, self._edit_selected)
-        self._pagination.frame.pack(fill="x", padx=10, pady=(2, 10))
+        self._pagination.frame.pack(fill="x", padx=PAD_X, pady=(GAP, PAD_Y))
 
     def _on_tree_click(self, event):
         if not self._table or not self._table.tree:
@@ -159,7 +162,7 @@ class DataPage(ctk.CTkFrame):
         self._orig_end = ""
         self._orig_total_min = 0.0
         if self._form.save_btn:
-            self._form.save_btn.configure(text="➕ Add Entry")
+            self._form.save_btn.configure(text=emoji_label("➕ Add Entry", "Add Entry"))
         if self._form.cancel_btn:
             self._form.cancel_btn.pack_forget()
         if self._form.form_status:
@@ -282,7 +285,8 @@ class DataPage(ctk.CTkFrame):
             if self._form.notes_entry:
                 self._form.notes_entry.insert(0, entry.get("notes", ""))
             if self._form.save_btn:
-                self._form.save_btn.configure(text="💾 Update Entry")
+                self._form.save_btn.configure(
+                    text=emoji_label("💾 Update Entry", "Update Entry"))
             if self._form.cancel_btn and self._form.form_status:
                 self._form.cancel_btn.pack(side="left", padx=(0, 8),
                                             before=self._form.form_status)

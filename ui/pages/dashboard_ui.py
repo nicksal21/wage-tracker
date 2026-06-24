@@ -12,6 +12,7 @@ from config import load_config
 from db import Database
 from dashboard import iso_range
 from ui.styles import configure_ttk_styles
+from ui.styles.layout import PAD_X, PAD_Y, GAP
 from ui.components import (
     format_value, month_name,
     PERIODS, CHARTS, CHART_KEYS, CARDS, STAT_ROWS,
@@ -33,6 +34,8 @@ def _fmt(kind: str, value, sym: str) -> str:
 class DashboardPage(ctk.CTkFrame):
     def __init__(self, master, app: "App", **kw):
         super().__init__(master, **kw)
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
         self.app = app
         self.db = Database()
         self.cfg = load_config()
@@ -66,16 +69,16 @@ class DashboardPage(ctk.CTkFrame):
     # ============================================================ build
     def _build(self) -> None:
         self._toolbar = DashboardToolbar(self)
-        self._toolbar.frame.pack(fill="x", padx=10, pady=(10, 2))
+        self._toolbar.frame.pack(fill="x", padx=PAD_X, pady=(PAD_Y, GAP))
 
         self._cards = DashboardCards(self, self.cfg)
-        self._cards.frame.pack(fill="x", padx=10, pady=4)
+        self._cards.frame.pack(fill="x", padx=PAD_X, pady=GAP)
 
         self._view_switch = DashboardViewSwitch(self)
-        self._view_switch.frame.pack(fill="x", padx=10, pady=(2, 0))
+        self._view_switch.frame.pack(fill="x", padx=PAD_X, pady=(GAP, 0))
 
         self._stats = DashboardStats(self, self.cfg)
-        self._stats.holder.pack(fill="both", expand=True, padx=10, pady=(4, 10))
+        self._stats.holder.pack(fill="both", expand=True, padx=PAD_X, pady=(GAP, PAD_Y))
 
         self._chart_holder = tk.Frame(self, bd=0, highlightthickness=0)
 
@@ -150,15 +153,15 @@ class DashboardPage(ctk.CTkFrame):
                 self._view_switch.chart_menu.pack_forget()
             if self._stats:
                 self._stats.holder.pack(fill="both", expand=True,
-                                          padx=10, pady=(4, 10))
+                                          padx=PAD_X, pady=(GAP, PAD_Y))
         else:
             if self._stats:
                 self._stats.holder.pack_forget()
             if self._view_switch and self._view_switch.chart_menu:
-                self._view_switch.chart_menu.pack(side="left", padx=(20, 0))
+                self._view_switch.chart_menu.pack(side="left", padx=(16, 0))
             if self._chart_holder:
                 self._chart_holder.pack(fill="both", expand=True,
-                                          padx=10, pady=(4, 10))
+                                          padx=PAD_X, pady=(GAP, PAD_Y))
             self._ensure_canvas()
             self._draw_chart(force=True)
 

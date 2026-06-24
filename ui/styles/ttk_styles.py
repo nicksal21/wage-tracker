@@ -50,17 +50,17 @@ def configure_ttk_styles(cfg: dict) -> None:
             borderwidth=0,           # NO outer border
             relief="flat",           # NO 3D relief
             font=("Segoe UI", 10),
-            rowheight=24,
+            rowheight=26,
         )
         
-        # Heading (column headers): NO borders, NO separators between columns
         style.configure(
             f"{variant}.Treeview.Heading",
             background=header_bg,
             foreground=fg,
             font=("Segoe UI", 10, "bold"),
-            borderwidth=0,           # NO border around headers
-            relief="flat",           # NO 3D relief
+            borderwidth=0,
+            relief="flat",
+            padding=(6, 4),
         )
         
         # Remove the visual separator between columns (the vertical lines)
