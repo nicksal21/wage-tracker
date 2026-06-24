@@ -31,10 +31,11 @@ def configure_ttk_styles(cfg: dict) -> None:
 
     theme = cfg.get("theme", {})
     is_dark = theme.get("mode", "dark").lower() == "dark"
-    bg = theme.get("card_bg", "#2b2b2b") if is_dark else "#ffffff"
-    fg = theme.get("text_color", "#DCE4EE") if is_dark else "#222222"
-    header_bg = theme.get("sidebar_bg", "#1f1f1f") if is_dark else "#e8e8e8"
+    bg = "#2b2b2b" if is_dark else "#ffffff"
+    fg = "#dcdcdc" if is_dark else "#222222"
+    header_bg = "#1f1f1f" if is_dark else "#e0e0e0"
     accent = theme.get("accent_color", "#3b8ed0")
+    
     # === REMOVE ALL BORDERS AND SEPARATORS ===
     # The key is setting borderwidth=0 and removing any relief/frames
     
@@ -49,42 +50,39 @@ def configure_ttk_styles(cfg: dict) -> None:
             borderwidth=0,           # NO outer border
             relief="flat",           # NO 3D relief
             font=("Segoe UI", 10),
-            rowheight=28,
+            rowheight=24,
         )
         
-        # Heading (column headers): subtle contrast, no separators
+        # Heading (column headers): NO borders, NO separators between columns
         style.configure(
             f"{variant}.Treeview.Heading",
             background=header_bg,
             foreground=fg,
             font=("Segoe UI", 10, "bold"),
-            borderwidth=0,
-            relief="flat",
-            padding=(8, 6),
+            borderwidth=0,           # NO border around headers
+            relief="flat",           # NO 3D relief
         )
         
+        # Remove the visual separator between columns (the vertical lines)
+        # by setting bordercolor to match background
         style.configure(
             f"{variant}.Treeview",
-            bordercolor=bg,
+            bordercolor=bg,          # Invisible column separators
         )
         
+        # Remove row separator lines (horizontal lines between rows)
         style.map(
             f"{variant}.Treeview",
             background=[("selected", accent)],
-            foreground=[("selected", "#ffffff")],
+            # Remove any alternate row coloring that might add visual clutter
             fieldbackground=[],
         )
         
-        # Alternating row stripe for readability
-        style.configure(
-            f"{variant}.Treeview",
-            background=bg,
-        )
-        
+        # Heading map: remove hover/press visual artifacts
         style.map(
             f"{variant}.Treeview.Heading",
-            background=[],
-            relief=[],
+            background=[],           # No background changes on hover/press
+            relief=[],               # No relief changes
         )
 
     # === THEMED SCROLLBAR (matches dark interface) ===
